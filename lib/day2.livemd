@@ -1,0 +1,123 @@
+# Day 2
+
+## Section
+
+```elixir
+defmodule Utils do
+  def parse_input(input_text) do
+    input_text
+    |> String.split(",", trim: true)
+    |> Enum.map(fn range_str ->
+      String.split(range_str, "-") |> Enum.map(&String.to_integer/1) |> Enum.sort()
+    end)
+  end
+
+  def load_text do
+    File.read!("priv/day2.txt")
+  end
+end
+```
+
+```elixir
+sample = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124"
+
+puzzle = "132454-182049,42382932-42449104,685933-804865,5330496-5488118,21-41,289741-376488,220191-245907,49-70,6438484-6636872,2-20,6666660113-6666682086,173-267,59559721-59667224,307-390,2672163-2807721,658272-674230,485679-647207,429-552,72678302-72815786,881990-991937,73-111,416063-479542,596-934,32825-52204,97951700-98000873,18335-27985,70203-100692,8470-11844,3687495840-3687599608,4861-8174,67476003-67593626,2492-4717,1442-2129,102962-121710,628612213-628649371,1064602-1138912"
+```
+
+## Part 1
+
+```elixir
+defmodule Day2.Part1 do
+  require Integer
+  
+  def run([min, max]) do
+    min..max
+    |> Enum.flat_map(&find_invalids/1)
+  end
+
+  defp find_invalids(int) do
+    cond do
+      int |> Integer.digits() |> length |> Integer.is_odd() -> []
+      int |> to_string |> halves_equal?() -> [int]
+      true -> []
+    end
+  end
+
+  def halves_equal?(str) do
+    size = byte_size(str)
+    mid = div(size, 2)
+    
+    binary_part(str, 0, mid) == binary_part(str, mid, mid)
+  end
+end
+```
+
+```elixir
+sample
+|> Utils.parse_input
+|> Enum.flat_map(&Day2.Part1.run/1)
+|> Enum.sum
+```
+
+```elixir
+puzzle
+|> Utils.parse_input
+|> Enum.flat_map(&Day2.Part1.run/1)
+|> Enum.sum
+```
+
+## Part 2
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Day2.Part2 do
+  require Integer
+
+  def run([min, max]) do
+    min..max
+    |> Enum.flat_map(&find_invalids/1)
+  end
+
+  defp find_invalids(int) do
+    digits = Integer.digits(int)
+    size = digits |> length
+    mid = size |> div(2)
+
+    1..mid
+    |> Enum.flat_map(fn
+      _ when size == 1 -> []
+      length when rem(size, length) == 0 ->
+        [hd | tl] = Enum.chunk_every(digits, length)
+
+        if Enum.all?(tl, &(&1 == hd)) do
+          [int]
+        else
+          []
+        end
+
+      _ ->
+        []
+    end)
+    |> Enum.uniq
+   # |> IO.inspect()
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+sample
+|> Utils.parse_input
+|> Enum.flat_map(&Day2.Part2.run/1)
+|> Enum.sum
+```
+
+```elixir
+puzzle
+|> Utils.parse_input
+|> Enum.flat_map(&Day2.Part2.run/1)
+|> IO.inspect(limit: :infinity)
+|> Enum.sum
+```
