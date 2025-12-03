@@ -1,0 +1,130 @@
+# Day 3
+
+```elixir
+File.cd!("Playground/aoc2025")
+```
+
+## Section
+
+```elixir
+sample = """
+987654321111111
+811111111111119
+234234234234278
+818181911112111
+"""
+```
+
+```elixir
+defmodule Utils do
+  def parse_input(input_text) do
+    input_text
+    |> String.split("\n", trim: true)
+  end
+
+  def load_text do
+    File.read!("priv/day3.txt")
+  end
+end
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Day3.Part1 do
+  @str_ints 9..1//-1 |> Enum.map(&to_string/1)
+  def build_joltage(row), do: build_joltage(@str_ints, row)
+
+  def build_joltage([val | t], row) do
+    case String.split(row, val, parts: 2) do
+      [_] ->
+        build_joltage(t, row)
+
+      [_, ""] ->
+        build_joltage(t, row)
+
+      [_, remain] ->
+        single_digit =
+          @str_ints
+          |> find_single_digit(remain)
+
+        val <> single_digit
+        |> String.to_integer
+    end
+  end
+
+  def find_single_digit([h | t], remain) do
+    if String.contains?(remain, h) do
+      h
+    else
+      find_single_digit(t, remain)
+    end
+  end
+end
+```
+
+```elixir
+sample
+|> Utils.parse_input()
+|> Enum.map(&Day3.Part1.build_joltage/1)
+|> Enum.sum
+```
+
+```elixir
+Utils.load_text()
+|> Utils.parse_input()
+|> Enum.map(&Day3.Part1.build_joltage/1)
+|> Enum.sum
+```
+
+## Part 2
+
+```elixir
+defmodule Day3.Part2 do
+  def build_joltage(row) do
+    Greedy.select(row)
+  end
+end
+
+# Claude Code
+defmodule Greedy do
+  def select(str) do
+    size = byte_size(str)
+    select_greedy(str, 12, 0, size, "")
+    |> String.to_integer()
+  end
+
+  defp select_greedy(_str, 0, _pos, _size, acc), do: acc
+
+  defp select_greedy(str, remaining, start_pos, size, acc) do
+    search_end = size - remaining
+    
+    # Find max digit in range [start_pos, search_end]
+    {max_digit, max_pos} = start_pos..search_end
+      |> Enum.map(fn pos -> 
+        digit = binary_part(str, pos, 1)
+        {digit, pos}
+      end)
+      |> Enum.max_by(fn {digit, _} -> digit end)
+    
+    select_greedy(str, remaining - 1, max_pos + 1, size, acc <> max_digit)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+sample
+|> Utils.parse_input()
+|> Enum.map(&Day3.Part2.build_joltage/1)
+```
+
+```elixir
+Utils.load_text()
+|> Utils.parse_input()
+|> Enum.map(&Day3.Part2.build_joltage/1)
+|> Enum.sum
+```
