@@ -1,0 +1,160 @@
+# Day 1
+
+```elixir
+
+File.cd!("Playground/aoc2025")
+```
+
+## Setup
+
+```elixir
+defmodule Utils do
+  def parse_input(input_text) do
+    input_text
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn <<direction::utf8>> <> integer_str -> {<<direction::utf8>>, String.to_integer(integer_str)} end)
+  end
+
+  def load_text do
+    File.read!("priv/day1.txt")
+  end
+end
+
+File.cwd!()
+
+```
+
+```elixir
+sample = """
+L68
+L30
+R48
+L5
+R60
+L55
+L1
+L99
+R14
+L82
+"""
+```
+
+```elixir
+
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Day1.Part1 do
+  def run({"R", steps}, start) do
+    total_steps = start + steps
+    if total_steps >= 100 do
+      rem(total_steps, 100)
+    else
+      total_steps
+    end
+  end
+  
+  def run({"L", steps}, start) do
+    total_steps = (start - steps) 
+
+    if total_steps < 0 do
+      rem(total_steps, 100)
+    else
+      total_steps
+    end
+  end
+
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+start_at = 50
+
+sample
+|> Utils.parse_input()
+|> Enum.scan(start_at, &Day1.Part1.run/2)
+|> IO.inspect
+|> Enum.filter(& &1 == 0)
+|> length
+
+```
+
+```elixir
+start_at = 50
+
+Utils.load_text()
+|> Utils.parse_input()
+|> Enum.scan(start_at, &Day1.Part1.run/2) 
+|> Enum.filter(& &1 == 0)
+|> length
+
+```
+
+## Part 2
+
+```elixir
+defmodule Day1.Part2 do
+  def run({"R", steps}, {_, start}) do
+    total_hits = div(start + steps, 100)
+    
+    # If we land exactly on 0, that's counted in the reduction, not here
+    passover = if rem(start + steps, 100) == 0 do
+      max(0, total_hits - 1)
+    else
+      total_hits
+    end
+    
+    new_pos = rem(start + steps, 100)
+    {passover, new_pos}
+  end
+  
+  def run({"L", steps}, {_, start}) do
+    passover = cond do
+      start == 0 -> div(steps, 100)
+      steps > start -> 1 + div(steps - start - 1, 100)
+      true -> 0
+    end
+    
+    # Calculate new position (handle negative wrapping)
+    total = start - steps
+    new_pos = rem(total, 100)
+    new_pos = if new_pos < 0, do: new_pos + 100, else: new_pos
+    
+    {passover, new_pos}
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+start_at = 50
+
+sample
+|> Utils.parse_input()
+|> Enum.scan({0, start_at}, &Day1.Part2.run/2)
+|> IO.inspect()
+|> Enum.reduce(0, fn 
+  {passover, 0}, acc -> acc + passover + 1
+  {passover, _}, acc -> acc + passover
+end)
+```
+
+```elixir
+start_at = 50
+
+Utils.load_text()
+|> Utils.parse_input()
+|> Enum.scan({0, start_at}, &Day1.Part2.run/2)
+|> IO.inspect()
+|> Enum.reduce(0, fn 
+  {passover, 0}, acc -> acc + passover + 1
+  {passover, _}, acc -> acc + passover
+end)
+```
