@@ -1,0 +1,175 @@
+# Day 4
+
+```elixir
+File.cd!("Playground/aoc2025")
+```
+
+## Setup
+
+```elixir
+sample = """
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+"""
+```
+
+```elixir
+sample_end = """
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+"""
+```
+
+```elixir
+defmodule Utils do
+  def parse_input(input_text) do
+    input_text
+    |> String.split("\n", trim: true)
+    |> Enum.with_index
+    |> Enum.flat_map(fn {row, row_i} ->
+      row
+      |> String.graphemes()
+      |> Enum.with_index
+      |> Enum.map(fn {elem, col_i} -> {{row_i, col_i}, elem} end)
+    end)
+  end
+
+  def load_text do
+    File.read!("priv/day4.txt")
+  end
+end
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Day4.Part1 do
+  def filter_by({{row_i, col_i}, "@"}, map) do
+    coords =
+      for row_ii <- (row_i - 1)..(row_i + 1),
+          col_ii <- (col_i - 1)..(col_i + 1),
+          {row_ii, col_ii} != {row_i, col_i} do
+        {row_ii, col_ii}
+      end
+
+    paper_count =
+      Map.take(map, coords)
+      |> Enum.filter(fn {_, elem} -> elem == "@" end)
+      |> length
+
+    if paper_count < 4, do: ["X"], else: []
+  end
+
+  def filter_by({_, _elem}, _), do: []
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+map =
+  sample
+  |> Utils.parse_input()
+  |> Map.new()
+
+map |> Enum.flat_map(&Day4.Part1.filter_by(&1, map)) |> length
+```
+
+```elixir
+map =
+  Utils.load_text()
+  |> Utils.parse_input()
+  |> Map.new()
+
+map |> Enum.flat_map(&Day4.Part1.filter_by(&1, map)) |> length
+```
+
+## Part 2
+
+```elixir
+defmodule Day4.Part2 do
+  def filter_by({{row_i, col_i} = coord, "@"}, map) do
+    coords =
+      for row_ii <- (row_i - 1)..(row_i + 1),
+          col_ii <- (col_i - 1)..(col_i + 1),
+          {row_ii, col_ii} != {row_i, col_i} do
+        {row_ii, col_ii}
+      end
+
+    paper_count =
+      Map.take(map, coords)
+      |> Enum.filter(fn {_, elem} -> elem == "@" end)
+      |> length
+
+    if paper_count < 4, do: [coord], else: []
+  end
+
+  def filter_by({_, _elem}, _), do: []
+
+  def iterator({map, _}) do
+    coords = map |> Enum.flat_map(&Day4.Part2.filter_by(&1, map))
+
+    moved_map =
+      coords
+      |> Enum.map(&{&1, "."})
+      |> Map.new()
+      |> then(&Map.merge(map, &1))
+
+    {moved_map, length(coords)}
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+map =
+  sample
+  |> Utils.parse_input()
+  |> Map.new()
+
+{map, nil}
+|> Stream.iterate(&Day4.Part2.iterator/1)
+|> Stream.take_while(fn
+  {_, nil} -> true
+  {_, moved_count} -> moved_count > 0
+end)
+|> Enum.map(fn {_, count} -> count end)
+|> Enum.reject(&is_nil/1)
+|> Enum.sum()
+```
+
+```elixir
+map =
+  Utils.load_text()
+  |> Utils.parse_input()
+  |> Map.new()
+
+{map, nil}
+|> Stream.iterate(&Day4.Part2.iterator/1)
+|> Stream.take_while(fn
+  {_, nil} -> true
+  {_, moved_count} -> moved_count > 0
+end)
+|> Enum.map(fn {_, count} -> count end)
+|> Enum.reject(&is_nil/1)
+|> Enum.sum()
+```
