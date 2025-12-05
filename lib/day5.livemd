@@ -1,0 +1,149 @@
+# Day 5
+
+## Setup
+
+```elixir
+sample = """
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+"""
+```
+
+```elixir
+File.cwd!()
+```
+
+```elixir
+defmodule Utils do
+  def parse_input(input_text) do
+    [fresh_range_strs, ingrediant_strs] =
+      input_text
+      |> String.split("\n\n", trim: true)
+      |> Enum.map(&String.split(&1, "\n", trim: true))
+
+    fresh_ranges =
+      fresh_range_strs
+      |> Enum.map(fn fresh_range_str ->
+        String.split(fresh_range_str, "-", trim: true)
+        |> Enum.map(&String.to_integer/1)
+        |> Enum.sort()
+      end)
+
+    ingrediants =
+      ingrediant_strs |> Enum.map(&String.to_integer/1)
+
+    {fresh_ranges, ingrediants}
+  end
+
+  def load_text do
+    File.read!("priv/day5.txt")
+  end
+end
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+{ranges, ingrediants} =
+  sample
+  |> Utils.parse_input()
+
+ingrediants
+|> Enum.filter(
+  &Enum.any?(ranges, fn [min, max] ->
+    min <= &1 && &1 <= max
+  end)
+)
+```
+
+```elixir
+{ranges, ingrediants} =
+   Utils.load_text()
+  |> Utils.parse_input()
+
+ingrediants
+|> Enum.filter(
+  &Enum.any?(ranges, fn [min, max] ->
+    min <= &1 && &1 <= max
+  end)
+)
+|> length
+```
+
+## Part 2
+
+```elixir
+defmodule Day5.Part2 do
+  def merge_ranges(list), do: list |> Enum.sort_by(fn min.._//_ -> min end) |> merge_ranges([])
+  
+  def merge_ranges([range], acc), do: [range | acc] |> Enum.reverse()
+
+  def merge_ranges([range_1, range_2 | ranges_t], acc) do
+    if Range.disjoint?(range_1, range_2) do
+      merge_ranges([range_2 | ranges_t], [range_1 | acc])
+    else
+      min_1..max_1//_ = range_1
+      min_2..max_2//_ = range_2
+
+      new_range = min(min_1, min_2)..max(max_1, max_2)
+
+      merge_ranges([new_range | ranges_t], acc)
+    end
+  end
+end
+```
+
+```elixir
+{ranges, _ingrediants} =
+  sample
+  |> Utils.parse_input()
+
+ranges
+|> Enum.map(fn [min, max] -> min..max end)
+|> Stream.unfold(fn current ->
+  merged = Day5.Part2.merge_ranges(current)
+
+  if merged == current do
+    nil
+  else
+    {merged, merged}
+  end
+end)
+|> Enum.to_list()
+|> hd
+|> Enum.map(&Range.size/1)
+|> Enum.sum
+```
+
+```elixir
+{ranges, _ingrediants} =
+  Utils.load_text()
+  |> Utils.parse_input()
+
+ranges
+|> Enum.map(fn [min, max] -> min..max end)
+|> Stream.unfold(fn current ->
+  merged = Day5.Part2.merge_ranges(current)
+
+  if merged == current do
+    nil
+  else
+    {merged, merged}
+  end
+end)
+|> Enum.to_list()
+|> hd
+|> Enum.map(&Range.size/1)
+|> Enum.sum
+```
