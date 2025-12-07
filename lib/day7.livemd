@@ -1,0 +1,159 @@
+# Day 7
+
+## Setup
+
+```elixir
+sample = """
+.......S.......
+...............
+.......^.......
+...............
+......^.^......
+...............
+.....^.^.^.....
+...............
+....^.^...^....
+...............
+...^.^...^.^...
+...............
+..^...^.....^..
+...............
+.^.^.^.^.^...^.
+...............
+"""
+```
+
+```elixir
+File.cd!("Playground/aoc2025")
+
+File.cwd!()
+```
+
+## Part 2
+
+```elixir
+defmodule Day7.Part2 do
+  def find_timelines(str, opts \\ []) do
+    empty_row = Keyword.get(opts, :empty_row, "...............")
+
+    [init_row | rows] =
+      str
+      |> String.split("\n", trim: true)
+      |> Enum.reject(&(&1 == empty_row))
+
+    init_beam =
+      init_row
+      |> String.split("S")
+      |> hd
+      |> String.length()
+      |> Kernel.+(1)
+
+    rows
+    |> Enum.reduce(%{init_beam => 1}, fn row, acc ->
+      hit_reflectors =
+        row
+        |> String.split("^")
+        |> Enum.drop(-1)
+        |> Enum.scan(0, fn dist, acc ->
+          dist
+          |> String.length()
+          |> Kernel.+(acc + 1)
+        end)
+        |> Enum.filter(&Map.has_key?(acc, &1))
+
+      Enum.reduce(acc, %{}, fn {pos, count}, new_acc ->
+        if pos in hit_reflectors do
+          new_acc
+          |> Map.update(pos - 1, count, &(&1 + count))
+          |> Map.update(pos + 1, count, &(&1 + count))
+        else
+          Map.update(new_acc, pos, count, &(&1 + count))
+        end
+      end)
+    end)
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+sample
+|> Day7.Part2.find_timelines()
+|> Map.values()
+|> Enum.sum()
+```
+
+```elixir
+empty_row =
+  "............................................................................................................................................."
+
+File.read!("priv/day7.txt")
+|> Day7.Part2.find_timelines(empty_row: empty_row)
+|> Map.values()
+|> Enum.sum
+
+
+```
+
+## Part 1
+
+```elixir
+defmodule Day7.Part1 do
+  def find_splits(str, opts \\ []) do
+    empty_row = Keyword.get(opts, :empty_row, "...............")
+
+    [init_row | rows] =
+      str
+      |> String.split("\n", trim: true)
+      |> Enum.reject(&(&1 == empty_row))
+
+    init_beam =
+      init_row
+      |> String.split("S")
+      |> hd
+      |> String.length()
+      |> Kernel.+(1)
+
+    rows
+    |> Enum.map_reduce([init_beam], fn row, acc ->
+      hit_reflectors =
+        row
+        |> String.split("^")
+        |> Enum.drop(-1)
+        |> Enum.scan(0, fn dist, acc ->
+          dist
+          |> String.length()
+          |> Kernel.+(acc + 1)
+        end)
+        |> Enum.filter(&(&1 in acc))
+
+      passthrough_beams = acc -- hit_reflectors
+
+      new_beams =
+        hit_reflectors
+        |> Enum.flat_map(&[&1 + 1, &1 - 1])
+        |> Enum.concat(passthrough_beams)
+        |> Enum.uniq()
+        |> Enum.sort()
+
+      {hit_reflectors, new_beams}
+    end)
+  end
+end
+```
+
+```elixir
+{splits, _} = sample |> Day7.Part1.find_splits
+
+splits |> List.flatten() |> length
+```
+
+```elixir
+empty_row =
+  "............................................................................................................................................."
+
+{splits, _} = File.read!("priv/day7.txt") |> Day7.Part1.find_splits(empty_row: empty_row)
+
+splits |> List.flatten() |> length
+```
